@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add ZRAM swap for better low-RAM performance
 - Add `linux-zen` kernel variant ISO for gaming-focused users
 
+## [0.1.5] — Privileged container + cleanup file_permissions warnings
+
+### Fixed
+- **`.github/workflows/build-iso.yml`**: Added `options: --privileged` to the
+  archlinux container. Without this, `pacstrap` fails with
+  `mount: /__w/.../airootfs/proc: permission denied` because the default
+  Actions container doesn't have `CAP_SYS_ADMIN`, which `arch-chroot` needs
+  to bind-mount `/proc`, `/sys`, `/dev` into the install root.
+  This is the standard approach used by every archiso-on-GHA project.
+- **`profiledef.sh`**: Removed `/etc/shadow` and `/etc/gshadow` from
+  `file_permissions`. These files are created by pacstrap (via the `filesystem`
+  and `shadow` packages) with correct 0400 perms already; listing them in
+  `file_permissions` only produced harmless "file does not exist" warnings
+  because mkarchiso tried to chmod them *before* pacstrap had created them.
+
 ## [0.1.4] — CI caching + airootfs perms fix
 
 ### Fixed

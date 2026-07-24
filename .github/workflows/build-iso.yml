@@ -47,6 +47,13 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
+      # mkarchiso calls pacstrap, which calls arch-chroot, which bind-mounts
+      # /proc, /sys, /dev, /run into the install root. Those mounts require
+      # CAP_SYS_ADMIN, which the default Actions container does NOT have.
+      # `--privileged` is the simplest way to grant all the capabilities
+      # mkarchiso needs (mount, losetup for squashfs, etc.).
+      # This is the standard approach used by every archiso-on-GHA project.
+      options: --privileged
 
     steps:
       # ---------- 1. Checkout ----------
