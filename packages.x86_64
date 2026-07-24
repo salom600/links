@@ -34,7 +34,11 @@ smartmontools
 grub
 efibootmgr
 os-prober
-memtest86+
+syslinux                  # required by archiso's bios.syslinux boot mode
+mtools                    # required by syslinux for FAT fs manipulation
+memtest86+                # BIOS memory tester
+memtest86+-efi            # UEFI memory tester (shows up in systemd-boot menu)
+edk2-shell                # UEFI shell (bootable from systemd-boot menu)
 arch-install-scripts
 archinstall
 calamares
