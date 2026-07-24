@@ -92,7 +92,10 @@ jobs:
             intltool \
             itstool \
             docbook-xsl \
-            imagemagick
+            imagemagick \
+            ttf-dejavu \
+            ttf-liberation \
+            gsfonts
 
       # ---------- 3. Configure git identity (needed by makepkg for SRCINFO) ----------
       - name: Configure git
