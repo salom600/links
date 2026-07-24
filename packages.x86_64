@@ -1,17 +1,29 @@
 # =============================================================================
 # Lumina Linux — Live ISO package list (x86_64)
 # =============================================================================
-# This file is consumed by `mkarchiso` to build the live environment.
-# Lines starting with `#` and blank lines are ignored.
+# Consumed by `mkarchiso` to build the live environment.
 #
-# IMPORTANT: Do NOT use inline comments (text after a package name on the
-# same line). mkarchiso's parser strips the comment but PRESERVES the
-# trailing whitespace before the comment, which causes pacman to receive
-# "mtools                    " (with trailing spaces) as a package name and
-# report "target not found: mtools" even though the package exists.
-# Use full-line comments only, like this one.
+# v0.1.8 RATIONALE — why this list shrank from ~200 → ~110 packages:
+#   Lumina is supposed to be a LIGHTWEIGHT distro (<=100MB RAM idle). The
+#   v0.1.7 list violated that goal by shipping gimp, inkscape, libreoffice,
+#   steam, wine, multiple dev toolchains (rust/go/nodejs/npm/yarn/ruby/perl/
+#   cmake/meson/vala), telegram-desktop, discord, etc. — adding ~2GB to the
+#   ISO and dozens of background services on idle.
 #
-# Order: base -> kernel -> firmware -> networking -> display -> DE -> apps
+#   Trimmed to: base system + kernel + networking + XFCE core + browser +
+#   basic media + Win11 theming + installer. Heavy apps (office suite,
+#   image editors, games, dev tools) are installable on first boot via the
+#   Pamac app store — that's what an app store is for.
+#
+# FORMATTING RULES (do not break these — every previous "target not found"
+# error in v0.1.0-v0.1.7 traces back to one of these):
+#   1. NO inline comments. A line like `mtools  # FAT tools` will be parsed
+#      as `mtools  ` (with trailing whitespace) by mkarchiso's tokenizer and
+#      pacman will report "target not found: mtools" even though the package
+#      exists. Use full-line comments only.
+#   2. NO version pins (pacstrap resolves from latest DB).
+#   3. NO duplicates across this file and build-aur-packages.sh — a package
+#      in both places causes pacstrap to fail with "duplicate target".
 # =============================================================================
 
 # ---------- Base system ----------
@@ -20,8 +32,7 @@ base-devel
 linux
 linux-headers
 linux-firmware
-linux-firmware-bnx2x
-linux-firmware-liquidio
+linux-firmware-broadcom
 linux-firmware-marvell
 intel-ucode
 amd-ucode
@@ -39,8 +50,6 @@ mtools
 smartmontools
 
 # ---------- Bootloader & install tools ----------
-# syslinux was removed from Arch in 2025 (now AUR-only) — built via CI.
-# We use UEFI-only boot (uefi.systemd-boot) — see profiledef.sh.
 grub
 efibootmgr
 os-prober
@@ -48,7 +57,6 @@ memtest86+-efi
 edk2-shell
 arch-install-scripts
 archinstall
-# calamares is AUR-only as of 2025 — built via CI and installed from [lumina].
 
 # ---------- Package manager & app store ----------
 pacman-contrib
@@ -56,7 +64,6 @@ reflector
 flatpak
 xdg-desktop-portal
 xdg-desktop-portal-gtk
-# pamac-aur and paru-bin are AUR packages — built via CI and installed from [lumina].
 
 # ---------- Networking ----------
 networkmanager
@@ -92,7 +99,6 @@ xf86-video-ati
 xf86-video-intel
 xf86-video-nouveau
 xf86-video-vesa
-# xf86-video-vmware was removed — modern VMware uses open-vm-tools + kernel drivers.
 open-vm-tools
 mesa
 vulkan-radeon
@@ -100,21 +106,13 @@ vulkan-intel
 vulkan-nouveau
 vulkan-icd-loader
 vulkan-mesa-layers
-lib32-mesa
-lib32-vulkan-radeon
-lib32-vulkan-intel
-lib32-vulkan-icd-loader
 glmark2
 vulkan-tools
 
-# ---------- NVIDIA (proprietary, optional but expected by gamers) ----------
-# The legacy 'nvidia' and 'nvidia-dkms' packages were renamed to
-# 'nvidia-open' and 'nvidia-open-dkms' in 2024. NVIDIA now defaults to
-# the open-source kernel modules on Turing+ (RTX 20xx and newer).
+# ---------- NVIDIA (open kernel modules, Turing+ default) ----------
 nvidia-open
 nvidia-open-dkms
 nvidia-utils
-lib32-nvidia-utils
 nvidia-settings
 
 # ---------- Audio (PipeWire stack) ----------
@@ -132,26 +130,20 @@ sof-firmware
 alsa-utils
 alsa-tools
 alsa-plugins
+alsa-firmware
 
-# ---------- Fonts ----------
-# noto-fonts-compat was removed from Arch in 2023.
-# xcursor-transparent never existed in official repos — AUR-only.
+# ---------- Fonts (minimal, just enough for UI + CJK + emoji) ----------
 ttf-dejavu
 ttf-liberation
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji
-ttf-ubuntu-font-family
 inter-font
 ttf-jetbrains-mono
-ttf-fira-code
-ttf-bitstream-vera
-gnu-free-fonts
 
-# ---------- XFCE desktop ----------
-# xfwm4-themes was removed from Arch.
-xfce4
-xfce4-goodies
+# ---------- XFCE desktop (core only, no -goodies bloat) ----------
+# NOTE: the 'xfce4' meta-package was removed from Arch in 2024.
+# We install the individual components we need instead.
 xfce4-pulseaudio-plugin
 xfce4-whiskermenu-plugin
 xfce4-notifyd
@@ -168,10 +160,8 @@ ristretto
 thunar
 thunar-volman
 thunar-archive-plugin
-thunar-media-tags-plugin
 tumbler
 ffmpegthumbnailer
-# raw-thumbnailer is AUR-only — built via CI.
 poppler-glib
 libgsf
 file-roller
@@ -179,7 +169,6 @@ gvfs
 gvfs-afc
 gvfs-gphoto2
 gvfs-mtp
-gvfs-nfs
 gvfs-smb
 gvfs-goa
 xdg-user-dirs
@@ -187,15 +176,15 @@ xdg-user-dirs-gtk
 xdg-utils
 desktop-file-utils
 
-# ---------- Compositor (Win11 acrylic blur) ----------
+# ---------- Compositor (Win11 acrylic blur via picom dual_kawase) ----------
 picom
 xorg-xprop
 
-# ---------- Themes (Win11-style) ----------
-# fluent-gtk-theme-git, tela-icon-theme-git, tela-circle-icon-theme-git
-# are AUR packages — built via CI and installed from [lumina].
-# arc-gtk-theme, arc-icon-theme, gtk-engine-murrine, xcursor-premium
-# are AUR-only — built via CI.
+# ---------- Themes (Win11-style base, AUR packages add the actual Win11 theme) ----------
+# NOTE: arc-gtk-theme, arc-icon-theme, gtk-engine-murrine are AUR-only as of
+# 2025 — they would need to be in build-aur-packages.sh. We omit them here
+# because the AUR script already includes fluent-gtk-theme-git which provides
+# a superior Win11 look. Users who want Arc can install via Pamac.
 papirus-icon-theme
 gtk3
 gtk4
@@ -206,114 +195,44 @@ kvantum-qt5
 qt5ct
 qt6ct
 
+# ---------- Dialog tools (in [extra], were wrongly classified as AUR in v0.1.7) ----------
+yad
+zenity
+
 # ---------- Login screen ----------
 lightdm
 lightdm-gtk-greeter
 lightdm-gtk-greeter-settings
 accountsservice
 
-# ---------- General-user applications ----------
+# ---------- General-user applications (minimal set, Pamac handles the rest) ----------
 firefox
 firefox-i18n-en-us
 firefox-ublock-origin
-# libreoffice-fresh-en-us doesn't exist — US English is bundled in libreoffice-fresh.
-libreoffice-fresh
-hunspell
-hunspell-en_US
-hunspell-en_GB
-hyphen
-hyphen-en
-mythes
-mythes-en
 vlc
 mpv
 ffmpeg
-ffmpegthumbnailer
-gthumb
-gimp
-inkscape
 evince
-eog
-filezilla
-thunderbird
-thunderbird-i18n-en-us
-transmission-gtk
-qbittorrent
 gnome-calculator
 gnome-screenshot
 gnome-system-monitor
 gnome-disk-utility
 baobab
-filelight
-hardinfo
-# neofetch was removed from Arch in 2024 — fastfetch is the modern replacement.
 fastfetch
 htop
 btop
-nvtop
 timeshift
 gparted
-gsmartcontrol
-# usbimager is AUR-only — built via CI.
-# yad and zenity are AUR-only — built via CI.
-libreoffice-extension-texmaths
+file-roller
 
-# ---------- Gaming (preinstalled for general users with gaming interest) ----------
-steam
-gamemode
-lib32-gamemode
-gamescope
-mangohud
-lib32-mangohud
-vulkan-tools
-wine
-wine-gecko
-wine-mono
-winetricks
-giflib
-lib32-giflib
-gnutls
-lib32-gnutls
-vkd3d
-lib32-vkd3d
-
-# ---------- Win-migrant helpers ----------
-# bottles and protonup-qt are built from AUR by CI and installed via the local lumina repo.
-
-# ---------- Communication & media (Flatpak-friendly) ----------
-discord
-telegram-desktop
-# zoom is AUR-only — built via CI.
-obs-studio
-gstreamer
-gst-plugins-good
-gst-plugins-bad
-gst-plugins-ugly
-gst-libav
-
-# ---------- Codecs ----------
-gst-plugins-base
-gst-plugins-base-libs
-aom
-dav1d
-ffmpeg
-libvorbis
-libvpx
-x264
-x265
-libdvdcss
-libdvdread
-libdvdnav
-
-# ---------- Utilities ----------
+# ---------- Utilities (no dev toolchains — users install via Pamac if needed) ----------
 git
-git-lfs
 github-cli
 curl
 wget
 rsync
 unzip
-p7zip
+7zip
 unrar
 tar
 gzip
@@ -321,48 +240,23 @@ xz
 zstd
 nano
 vim
-neovim
 bat
-exa
 fd
 ripgrep
 jq
 yt-dlp
 tmux
 tree
-htop
 ncdu
-strace
-ltrace
-lsof
 file
 diffutils
 patch
 make
-cmake
 pkgconf
-dkms
-etckeeper
-reflector
 python
-python-pip
-python-setuptools
-python-wheel
-python-virtualenv
-perl
-ruby
-go
-rust
-# 'cargo' is a virtual package provided by 'rust' (already listed) and
-# 'rustup'. Listing it separately caused pacstrap to hang on an
-# interactive "choose provider" prompt. Removed — rust provides cargo.
-nodejs
-npm
-yarn
+reflector
 
 # ---------- Power management ----------
-tlp
-tlp-rdw
 acpi
 acpid
 upower
@@ -371,9 +265,6 @@ cpupower
 
 # ---------- Filesystem & disk utilities ----------
 btrfs-progs
-btrfs-assistant
-snapper
-# snapper-gui is AUR-only — built via CI.
 xfsprogs
 f2fs-tools
 exfatprogs
@@ -381,7 +272,6 @@ ntfs-3g
 udisks2
 udiskie
 polkit-gnome
-gvfs
 
 # ---------- Security & privacy ----------
 ufw
@@ -392,11 +282,9 @@ libsecret
 seahorse
 pinentry
 
-# ---------- Firmware & drivers ----------
-sof-firmware
-alsa-firmware
+# ---------- Firmware ----------
 linux-firmware-qlogic
-# wd719x-firmware, aic94xx-firmware, upd72020x-fw are AUR-only — built via CI.
+
+# ---------- Initramfs ----------
 mkinitcpio
 mkinitcpio-archiso
-booster

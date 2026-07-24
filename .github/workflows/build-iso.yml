@@ -45,6 +45,12 @@ jobs:
   build:
     name: Build Lumina Linux ISO
     runs-on: ubuntu-latest
+    # v0.1.8: Hard 60-min job timeout. Previous builds ran 1h15min before being
+    # manually cancelled — that's wasted Actions minutes. The v0.1.8 build
+    # should finish in 20-30 min cold cache, 10-15 min warm cache. If we hit
+    # 60 min, something is genuinely broken (network, mirror, keyring) and we
+    # should abort instead of grinding for hours.
+    timeout-minutes: 60
     container:
       image: archlinux:latest
       # mkarchiso calls pacstrap, which calls arch-chroot, which bind-mounts
@@ -181,11 +187,59 @@ jobs:
           echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder
           chmod 0440 /etc/sudoers.d/builder
 
+      # ---------- 4b. Generate mirrorlist (v0.1.8 fix for "target not found") ----------
+      # The archlinux:latest Docker image SOMETIMES ships with an empty or
+      # stale /etc/pacman.d/mirrorlist. When that happens, every [extra]
+      # package is reported as "target not found" by pacstrap even though
+      # the database downloads. This step guarantees a working mirrorlist.
+      # We also hardcode the mirror URL in pacman.conf as a primary source,
+      # so this is a belt-and-suspenders fallback.
+      - name: Generate mirrorlist
+        run: |
+          echo "=== Current mirrorlist state ==="
+          if [ -f /etc/pacman.d/mirrorlist ]; then
+            wc -l /etc/pacman.d/mirrorlist
+            head -5 /etc/pacman.d/mirrorlist
+          else
+            echo "  (does not exist — creating)"
+          fi
+
+          echo ""
+          echo "=== Generating fresh mirrorlist via reflector ==="
+          # Pick the 5 most up-to-date HTTPS mirrors in the global pool.
+          # Use --sort age (most recently synced) for reliability.
+          # The 2-min timeout prevents this step from hanging on bad networks.
+          timeout 120 reflector \
+            --latest 20 \
+            --sort age \
+            --protocol https \
+            --save /etc/pacman.d/mirrorlist || {
+              echo "WARNING: reflector failed — writing fallback mirror directly"
+              mkdir -p /etc/pacman.d
+              echo 'Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch' > /etc/pacman.d/mirrorlist
+            }
+
+          echo ""
+          echo "=== New mirrorlist ==="
+          cat /etc/pacman.d/mirrorlist
+          echo ""
+          echo "=== Verifying pacman can see [extra] packages ==="
+          pacman -Sy --noconfirm
+          pacman -Ss '^mtools$' || echo "  WARNING: mtools not found in [extra] — mirrorlist may still be broken"
+          pacman -Ss '^zenity$' || echo "  WARNING: zenity not found in [extra] — mirrorlist may still be broken"
+
       # ---------- 5. Build AUR packages into a local repo ----------
       # The local repo is later referenced by pacman.conf and consumed by
       # mkarchiso's pacstrap. Packages that fail to build are skipped with a
       # warning so the ISO can still be produced (with reduced functionality).
+      #
+      # v0.1.8: Hard 20-min timeout. The v0.1.7 list (with bottles, calamares,
+      # protonup-qt — 30+ min source builds each) ran for 1h15min before being
+      # manually cancelled. The v0.1.8 list (8 fast-build packages) should
+      # finish in 10-15 min cold, 1-2 min warm. If we exceed 20 min, something
+      # is wrong and we abort instead of burning Actions minutes.
       - name: Build AUR packages
+        timeout-minutes: 20
         run: |
           chmod +x scripts/build-aur-packages.sh
           bash scripts/build-aur-packages.sh

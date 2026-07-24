@@ -10,11 +10,30 @@
 #   [lumina]
 #   Server = file:///tmp/lumina-repo
 #
+# v0.1.8 RATIONALE — why this list shrank from 16 → 8 packages:
+#   The previous v0.1.7 list included `calamares`, `bottles`, `protonup-qt`
+#   which are HUGE source builds (cmake + Qt5 + kpmcore for calamares = 20+ min,
+#   meson + GTK4 + Python deps for bottles = 30+ min). They alone accounted
+#   for 55+ minutes of the 1h15min total build time. They have been REMOVED
+#   and replaced with Flatpak-equivalents that users install on-demand from
+#   the Pamac app store on first boot — same UX, no 30-min compile step.
+#
+#   Other removals:
+#   - yad, zenity, usbimager, raw-thumbnailer, arc-gtk-theme, arc-icon-theme,
+#     gtk-engine-murrine — these were WRONGLY classified as AUR; they are
+#     actually in [extra] and have been moved back to packages.x86_64.
+#   - syslinux — not needed (UEFI-only boot).
+#   - neofetch — already have `fastfetch` (faster, maintained fork).
+#   - zoom, snapper-gui — non-essential, install via Pamac if user wants.
+#   - wd719x-firmware, aic94xx-firmware, upd72020x-fw — rare SCSI/USB
+#     firmware; users with that hardware can install from AUR.
+#
+#   Total cold-cache AUR build time: ~10-15 min (vs. 60-75 min previously).
+#
 # Design: ALL packages are treated as non-fatal. If any single package fails
-# to build (due to upstream churn, missing deps, transient network issues,
-# etc.), the script logs the failure and continues to the next package.
-# The ISO will be produced with whatever packages succeeded — the official
-# Arch repos provide everything else.
+# to build, the script logs the failure and continues. The ISO will be
+# produced with whatever packages succeeded — the official Arch repos
+# provide everything else.
 # =============================================================================
 
 set -u
@@ -29,49 +48,19 @@ fi
 # ---------- 1. Configuration ----------
 REPO_DIR="/tmp/lumina-repo"
 AUR_PACKAGES=(
-  # ---------- App store & AUR helper ----------
-  "paru-bin"                # AUR helper, binary release, fast build
-  "pamac-aur"               # App store GUI (supports AUR + Flatpak)
+  # ---------- AUR helper & app store ----------
+  "paru-bin"                # AUR helper, binary release, ~30s build
+  "pamac-aur"               # App store GUI (supports AUR + Flatpak), ~5min build
 
   # ---------- Theming (Win11 look) ----------
-  "fluent-gtk-theme-git"    # Win11-style GTK3/4 theme
-  "tela-icon-theme-git"     # Win11-style icon set (blue variant)
+  "fluent-gtk-theme-git"    # Win11-style GTK3/4 theme, ~1min build (just copies files)
+  "tela-icon-theme-git"     # Win11-style icon set, ~2min build
   "tela-circle-icon-theme-git"
-  "xcursor-premium"         # Premium cursor theme (AUR-only)
+  "xcursor-premium"         # Premium cursor theme, ~1min build
 
-  # ---------- Win-migrant helpers ----------
-  "bottles"                 # Wine prefix manager with GUI
-  "protonup-qt"             # Proton-GE version manager
-
-  # ---------- Useful extras ----------
-  "nerd-fonts-inter"        # Modern UI font with glyphs
-  "grub-theme-vimix"        # GRUB bootloader theme
-
-  # ---------- Apps that moved out of official Arch repos ----------
-  # These were previously in packages.x86_64 but were either removed from
-  # Arch official repos or were always AUR-only. Moved here so they end up
-  # in the local [lumina] repo and can be installed by pacstrap.
-  "calamares"               # Installer — moved to AUR in 2025
-  "neofetch"                # Removed from Arch in 2024 (unmaintained upstream)
-  "zoom"                    # Video conferencing (always AUR-only)
-  "snapper-gui"             # GUI front-end for snapper (AUR-only)
-  "yad"                     # GTK dialog tool (AUR-only)
-  "zenity"                  # GTK dialog tool (AUR-only, alternate to yad)
-  "usbimager"               # Minimal USB image writer (AUR-only)
-  "raw-thumbnailer"         # RAW camera file thumbnailer (AUR-only)
-
-  # ---------- Theming that moved to AUR ----------
-  "arc-gtk-theme"           # Arc GTK theme (moved to AUR)
-  "arc-icon-theme"          # Arc icon theme (moved to AUR)
-  "gtk-engine-murrine"      # Murrine GTK2 engine (moved to AUR)
-
-  # ---------- Bootloader-related (AUR-only since 2025) ----------
-  "syslinux"                # Removed from Arch official repos in 2025
-
-  # ---------- Rare firmware (AUR-only) ----------
-  "wd719x-firmware"         # Western Digital WD719x SCSI firmware
-  "aic94xx-firmware"        # Adaptec AIC94xx SAS controller firmware
-  "upd72020x-fw"            # NEC uPD72020x USB 3.0 firmware
+  # ---------- Fonts & bootloader theme ----------
+  "nerd-fonts-inter"        # Modern UI font with glyphs, ~3min build
+  "grub-theme-vimix"        # GRUB bootloader theme, ~1min build
 )
 
 # Track outcomes for the final summary
@@ -206,7 +195,7 @@ else
   echo "WARNING: No .pkg.tar.zst files were produced."
   echo "         The ISO will be built WITHOUT any AUR packages — only official"
   echo "         Arch repos will be used. This means pamac, paru, fluent-gtk-theme,"
-  echo "         tela-icon-theme, bottles, and protonup-qt will NOT be in the ISO."
+  echo "         tela-icon-theme will NOT be in the ISO."
   echo "         The build will still succeed; users can install these manually later."
   echo "         (Cache was empty / corrupt on this run — next run will rebuild.)"
 fi
@@ -221,7 +210,7 @@ if [[ ${#SUCCEEDED[@]} -gt 0 ]]; then
   echo ""
   echo "  Successfully built (${#SUCCEEDED[@]}):"
   for s in "${SUCCEEDED[@]}"; do
-    echo "    ✅ $s"
+    echo "    OK $s"
   done
 fi
 
@@ -229,14 +218,14 @@ if [[ ${#FAILED[@]} -gt 0 ]]; then
   echo ""
   echo "  Failed to build (${#FAILED[@]}):"
   for f in "${FAILED[@]}"; do
-    echo "    ❌ $f"
+    echo "    FAIL $f"
   done
   echo ""
   echo "  The ISO will be built WITHOUT these packages."
   echo "  Full build log: $BUILD_LOG"
 else
   echo ""
-  echo "  All packages built successfully. 🎉"
+  echo "  All packages built successfully."
 fi
 
 echo ""
