@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Toggle Visual Effects
+GenericName=Effects Toggle
+Comment=Switch between full Win11 acrylic effects and performance mode
+Exec=/usr/local/bin/lumina-toggle-effects
+Icon=preferences-desktop-effects
+Terminal=false
+Categories=System;Settings;Lumina;
+Keywords=effects;transparency;blur;performance;power;
+StartupNotify=true

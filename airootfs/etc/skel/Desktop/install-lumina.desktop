@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Install Lumina
+GenericName=System Installer
+Comment=Install Lumina Linux to your disk
+Exec=/usr/local/bin/lumina-installer
+Icon=calamares
+Terminal=false
+Categories=System;
+Keywords=install;installer;calamares;setup;
+StartupNotify=true

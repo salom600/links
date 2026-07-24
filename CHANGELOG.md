@@ -1,0 +1,79 @@
+# Changelog
+
+All notable changes to Lumina Linux are documented here.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Planned
+- Replace placeholder branding assets with final logo/wallpaper designs
+- Add a Lumina Control Center (custom settings GUI)
+- Add a Lumina Tour interactive walkthrough
+- Pre-configure Flatpak with Flathub + curated app list
+- Add ZRAM swap for better low-RAM performance
+- Add `linux-zen` kernel variant ISO for gaming-focused users
+
+## [0.1.0] — Initial scaffold
+
+### Added
+- **Core infrastructure**
+  - Archiso-based project structure with `profiledef.sh`, `packages.x86_64`, `pacman.conf`
+  - GitHub Actions workflow (`.github/workflows/build-iso.yml`) — tag-triggered (`v*.*.*`), publishes GitHub Release with ISO + SHA256 checksum
+  - Local AUR package builder (`scripts/build-aur-packages.sh`) — builds `pamac-aur`, `paru-bin`, `fluent-gtk-theme-git`, `tela-icon-theme-git`, `bottles`, `protonup-qt`, etc. into a local `[lumina]` pacman repo
+  - Branding-asset generator (`scripts/generate-branding-assets.sh`) — creates placeholder PNG/SVG logos, wallpapers, and Calamares slideshow images via ImageMagick
+  - Systemd service enablement (`scripts/setup-services.sh`) — creates symlinks for NetworkManager, LightDM, Bluetooth, firewalld, TLP, etc.
+- **Desktop environment**
+  - XFCE 4.x with custom Win11-style panel layout (`xfce4-panel.xml`): Whisker Menu (start), pinned app shortcuts, centered task list, system tray, volume, network, clock
+  - xfwm4 configured with Fluent theme, Inter Semi-Bold title font, right-aligned min/max/close buttons, snap-to-edge tiling
+  - picom compositor with dual_kawase blur for Win11 acrylic effect, soft shadows, 90% inactive-window opacity, 8px corner rounding
+  - Fluent GTK theme + Tela Blue icons + Premium cursor theme
+  - LightDM GTK greeter with dark blurred wallpaper and centered login dialog
+- **Win-migrant keyboard shortcuts**
+  - Super+E → file manager (Thunar)
+  - Super+T → terminal
+  - Super+L → lock screen
+  - Super+I → settings
+  - Super+D → show desktop
+  - Super+Shift+S → screenshot region
+- **Pre-installed apps (general users)**
+  - Firefox with uBlock Origin
+  - LibreOffice Fresh (full suite, en-US)
+  - VLC, MPV
+  - Discord, Telegram
+  - Thunderbird (email)
+  - GNOME Calculator, Screenshot, System Monitor, Disk Utility
+  - GIMP, Inkscape (image editing)
+  - Evince (PDF), EOG (image viewer)
+  - qbittorrent, Transmission
+- **Pre-installed gaming stack**
+  - Steam, GameMode, MangoHud, Gamescope
+  - Wine + Winetricks + vkd3d
+  - Bottles (Wine prefix manager) — via AUR
+  - ProtonUp-Qt — via AUR
+- **App store & package management**
+  - Pamac (pacman + AUR + Flatpak unified GUI)
+  - paru (AUR helper)
+  - Flatpak with Flathub auto-configured on first boot
+- **Installer**
+  - Calamares with custom Lumina branding, slideshow, and module config (welcome, locale, keyboard, partition, users, mount, unpackfs, fstab, displaymanager, networkcfg, services-systemd, grubcfg, bootloader, packages, finished)
+  - `lumina-installer` wrapper script with archinstall fallback
+  - First-boot customization script (`first-boot.sh`): copies skel files, adds user to groups, configures Flathub, sets up snapper for btrfs, applies GRUB theme, enables os-prober
+- **Bootloaders**
+  - syslinux config (BIOS) with Lumina, NVIDIA, and Safe Graphics boot options
+  - systemd-boot config (UEFI)
+  - GRUB config (fallback)
+- **Live-ISO UX**
+  - Auto-login as `lumina` user on tty1
+  - Welcome app (`lumina-welcome`) shown on first desktop login — install/update/tour buttons
+  - Effects toggle (`lumina-toggle-effects`) — switches between full acrylic and performance mode
+  - Desktop shortcuts for `Install Lumina` and `Lumina Welcome`
+
+### Known limitations
+- Branding assets are auto-generated placeholders (simple gradients with the Lumina "L" logo) — must be replaced before a public release
+- The `calamares-branding-lumina` package is not yet packaged as a standalone — branding files are overlaid directly into the airootfs
+- Some AUR packages may fail to build intermittently depending on upstream churn — the build script skips them gracefully but the resulting ISO will be missing those packages
+- The live ISO uses the `lumina` user with no password; this is intentional for live ISOs but should NOT be carried over to the installed system (Calamares forces a password prompt during install)
+
+[Unreleased]: https://github.com/salom600/links/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/salom600/links/releases/tag/v0.1.0

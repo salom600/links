@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# =============================================================================
+# lumina-toggle-effects — Toggle Win11 acrylic / transparency effects on/off
+# =============================================================================
+# Useful for:
+#   - Low-end hardware (disable blur to save GPU)
+#   - Battery saving on laptops
+#   - Users who prefer an opaque, high-contrast look
+#
+# Toggles between two picom configs:
+#   ~/.config/picom/picom.conf          — full effects (default)
+#   ~/.config/picom/picom-performance.conf — reduced effects (no blur, opaque)
+# =============================================================================
+
+set -euo pipefail
+
+USER_PICOM_DIR="${HOME}/.config/picom"
+EFFECTS_CONF="$USER_PICOM_DIR/picom.conf"
+PERFORMANCE_CONF="$USER_PICOM_DIR/picom-performance.conf"
+STATE_FILE="${HOME}/.config/lumina/effects-mode"
+
+mkdir -p "$USER_PICOM_DIR" "$(dirname "$STATE_FILE")"
+
+# Seed the performance config on first run
+if [[ ! -f "$PERFORMANCE_CONF" ]]; then
+  cat > "$PERFORMANCE_CONF" <<'EOF'
+# Lumina Linux — Performance mode (no blur, opaque, minimal GPU)
+backend = "glx";
+vsync = true;
+shadow = true;
+shadow-radius = 6;
+shadow-opacity = 0.40;
+fading = true;
+fade-in-step = 0.15;
+fade-out-step = 0.15;
+inactive-opacity = 1.0;
+active-opacity = 1.0;
+frame-opacity = 1.0;
+# No blur section — this is the main GPU saving
+wintypes: {
+  normal = { fade = true; shadow = true; };
+  dialog = { fade = true; shadow = true; };
+  popup_menu = { fade = true; shadow = true; };
+  dropdown_menu = { fade = true; shadow = true; };
+  tooltip = { fade = true; shadow = true; };
+  notification = { fade = true; shadow = true; };
+  dock = { fade = false; shadow = false; };
+  desktop = { fade = false; shadow = false; opacity = 1.0; };
+};
+glx-no-stencil = true;
+use-damage = true;
+corner-radius = 6;
+EOF
+fi
+
+# Determine current state
+CURRENT="effects"
+[[ -f "$STATE_FILE" ]] && CURRENT=$(cat "$STATE_FILE")
+
+# Toggle
+if [[ "$CURRENT" == "effects" ]]; then
+  NEW_MODE="performance"
+  NEW_CONF="$PERFORMANCE_CONF"
+  MSG="Performance mode ON — transparency & blur disabled.\nGPU load reduced, battery saved."
+else
+  NEW_MODE="effects"
+  NEW_CONF="$EFFECTS_CONF"
+  MSG="Full effects ON — Win11 acrylic transparency & blur enabled."
+fi
+
+echo "$NEW_MODE" > "$STATE_FILE"
+
+# Restart picom with the new config
+if pgrep -x picom >/dev/null; then
+  pkill -x picom
+  sleep 0.3
+fi
+nohup picom --config "$NEW_CONF" --daemon >/dev/null 2>&1 &
+
+# Notify the user
+if command -v notify-send >/dev/null; then
+  if [[ "$NEW_MODE" == "effects" ]]; then
+    notify-send -i "preferences-desktop-effects" \
+      "Lumina Effects" "$MSG"
+  else
+    notify-send -i "preferences-desktop-effects" \
+      "Lumina Effects" "$MSG"
+  fi
+fi
+
+echo -e "$MSG"

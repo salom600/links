@@ -1,0 +1,225 @@
+# =============================================================================
+# Lumina Linux — ISO Build Pipeline
+# =============================================================================
+# Triggers:
+#   - Push of a tag matching v*.*.*   ->  builds the ISO and publishes a Release
+#   - Manual dispatch from Actions tab ->  builds the ISO, uploads as a workflow
+#                                            artifact (no release published)
+#
+# Runner: ubuntu-latest inside an archlinux:latest container (we need pacman +
+# archiso which are not packaged for Ubuntu). The container runs unprivileged;
+# mkarchiso does not need root inside the container for squashfs creation.
+#
+# Build time budget: ~45–75 minutes (well under the 6-hour job limit).
+# Disk usage: ~10 GB peak (well under the 14 GB runner SSD limit).
+# =============================================================================
+
+name: Build ISO
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish a GitHub Release (only applies to tag pushes; ignored here)'
+        required: false
+        default: 'false'
+
+# Cancel any superseded run on the same ref (saves Actions minutes).
+concurrency:
+  group: build-iso-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write   # needed by softprops/action-gh-release to create releases
+
+jobs:
+  build:
+    name: Build Lumina Linux ISO
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      # ---------- 1. Checkout ----------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------- 2. Refresh Arch keyring + system + base build deps ----------
+      - name: Install build dependencies
+        run: |
+          # The archlinux container ships without an initialized keyring.
+          # Initialize it BEFORE running pacman -Syu, otherwise the upgrade
+          # will fail signature verification.
+          pacman-key --init || true
+          pacman-key --populate archlinux || true
+
+          # Install sudo first (needed by build-aur-packages.sh's builder user)
+          pacman -Sy --noconfirm --needed sudo
+
+          # Full system upgrade + the tools mkarchiso and makepkg need.
+          # --overwrite is needed because archlinux container sometimes has
+          # conflicting files between the base image and the new packages.
+          pacman -Syu --noconfirm --needed --overwrite '*' \
+            base-devel \
+            git \
+            curl \
+            wget \
+            rsync \
+            archiso \
+            grub \
+            dosfstools \
+            mtools \
+            squashfs-tools \
+            libisoburn \
+            pkgconf \
+            patch \
+            diffutils \
+            python \
+            python-pip \
+            perl \
+            ruby \
+            rust \
+            go \
+            cmake \
+            ninja \
+            meson \
+            vala \
+            gobject-introspection \
+            appstream-glib \
+            intltool \
+            itstool \
+            docbook-xsl \
+            imagemagick
+
+      # ---------- 3. Configure git identity (needed by makepkg for SRCINFO) ----------
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory '*'
+          git config --global user.email "ci@lumina-linux.local"
+          git config --global user.name  "Lumina CI"
+
+      # ---------- 4. Create a non-root builder (makepkg refuses root) ----------
+      - name: Create builder user
+        run: |
+          useradd -m -G wheel -s /bin/bash builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder
+          chmod 0440 /etc/sudoers.d/builder
+
+      # ---------- 5. Build AUR packages into a local repo ----------
+      # The local repo is later referenced by pacman.conf and consumed by
+      # mkarchiso's pacstrap. Packages that fail to build are skipped with a
+      # warning so the ISO can still be produced (with reduced functionality).
+      - name: Build AUR packages
+        run: |
+          chmod +x scripts/build-aur-packages.sh
+          bash scripts/build-aur-packages.sh
+
+      # ---------- 6. Generate placeholder branding assets ----------
+      # These are simple PNG/SVG placeholders so the ISO builds even before
+      # the user drops in real logo/wallpaper designs. Replace before release.
+      - name: Generate branding assets
+        run: |
+          chmod +x scripts/generate-branding-assets.sh
+          bash scripts/generate-branding-assets.sh
+
+      # ---------- 7. Enable systemd services in airootfs ----------
+      # Creates symlinks under airootfs/etc/systemd/system/ so NetworkManager,
+      # lightdm, bluetooth, etc. auto-start when the live ISO boots.
+      - name: Enable systemd services
+        run: |
+          chmod +x scripts/setup-services.sh
+          bash scripts/setup-services.sh
+
+      # ---------- 8. Build the ISO with mkarchiso ----------
+      - name: Build ISO
+        run: |
+          # mkarchiso needs an absolute path to a writable workdir.
+          mkdir -p work out
+          mkarchiso -v -w "$(pwd)/work" -o "$(pwd)/out" .
+
+          # Show what we produced
+          ls -lah out/
+
+      # ---------- 9. Compute metadata + checksums ----------
+      - name: Rename ISO and generate checksum
+        id: meta
+        run: |
+          # Determine version string (tag name or nightly timestamp)
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="nightly-$(date -u +%Y%m%d-%H%M%S)"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+          # Find the produced ISO (archiso names it <iso_name>-<version>-x86_64.iso)
+          ISO_SRC=$(ls out/*.iso | head -n1)
+          ISO_DST="out/lumina-${VERSION}-x86_64.iso"
+          mv "$ISO_SRC" "$ISO_DST"
+
+          # SHA256 checksum
+          cd out
+          sha256sum "$(basename "$ISO_DST")" > "$(basename "$ISO_DST").sha256sum"
+          cd ..
+          ls -lah out/
+
+      # ---------- 10. Upload as workflow artifact (always, even on manual run) ----------
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumina-iso-${{ steps.meta.outputs.VERSION }}
+          path: |
+            out/*.iso
+            out/*.sha256sum
+          retention-days: 14
+          compression-level: 0   # ISO is already compressed; no point re-compressing
+
+      # ---------- 11. Publish GitHub Release (only on tag push) ----------
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Lumina Linux ${{ github.ref_name }}
+          body: |
+            # Lumina Linux ${{ github.ref_name }}
+
+            ## Download
+            - **ISO:** `lumina-${{ steps.meta.outputs.VERSION }}-x86_64.iso`
+            - **Checksum:** `lumina-${{ steps.meta.outputs.VERSION }}-x86_64.iso.sha256sum`
+
+            ## Verify
+            ```bash
+            sha256sum -c lumina-${{ steps.meta.outputs.VERSION }}-x86_64.iso.sha256sum
+            ```
+
+            ## Write to USB
+            ```bash
+            sudo dd if=lumina-${{ steps.meta.outputs.VERSION }}-x86_64.iso \
+              of=/dev/sdX bs=4M status=progress conv=fsync
+            ```
+            (Replace `/dev/sdX` with your USB device. Use `lsblk` to identify it.)
+
+            ## System Requirements
+            - 64-bit x86 CPU (Intel or AMD)
+            - 2 GB RAM (4 GB recommended)
+            - 20 GB free disk space
+            - USB flash drive (4 GB+)
+
+            ## First Boot
+            1. Boot from the USB
+            2. Click **Install Lumina** on the desktop to launch the installer
+            3. Follow the guided install wizard
+            4. Reboot into your new Lumina system
+
+            ## What's New
+            See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md).
+          files: |
+            out/*.iso
+            out/*.sha256sum
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: false

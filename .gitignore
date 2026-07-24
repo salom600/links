@@ -1,0 +1,34 @@
+# Build artifacts
+work/
+out/
+*.iso
+*.sfs
+*.sig
+
+# Local AUR repo (built fresh per CI run)
+airootfs/usr/local/repo/lumina/*
+!airootfs/usr/local/repo/lumina/.gitkeep
+
+# Generated branding assets (regenerated per build)
+airootfs/usr/share/backgrounds/lumina/*.png
+airootfs/usr/share/backgrounds/lumina/*.jpg
+airootfs/usr/share/calamares/branding/lumina/*.png
+airootfs/usr/share/icons/lumina-start-symbolic.svg
+syslinux/splash.png
+
+# Editor / OS cruft
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+
+# Credentials — NEVER commit these
+*.pem
+*.key
+.env
+.env.*
+secrets/

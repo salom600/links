@@ -1,0 +1,28 @@
+{
+  "componentName": "lumina",
+  "strings": {
+    "productName": "Lumina Linux",
+    "shortProductName": "Lumina",
+    "version": "0.1.0",
+    "shortVersion": "0.1.0",
+    "versionedName": "Lumina Linux 0.1.0",
+    "shortVersionedName": "Lumina 0.1.0",
+    "subtitle": "Lightweight. Modern. Yours.",
+    "websiteUrl": "https://github.com/salom600/links",
+    "supportUrl": "https://github.com/salom600/links/issues",
+    "knownIssuesUrl": "https://github.com/salom600/links/issues",
+    "releaseNotesUrl": "https://github.com/salom600/links/releases"
+  },
+  "images": {
+    "productLogo": "lumina-logo.png",
+    "productIcon": "lumina-logo.png",
+    "productWelcome": "lumina-welcome.png"
+  },
+  "style": {
+    "sidebarBackground": "#1e1e2e",
+    "sidebarText": "#cdd6f4",
+    "sidebarTextSelect": "#89b4fa",
+    "background": "#11111b"
+  },
+  "slideshow": "slideshow.conf"
+}

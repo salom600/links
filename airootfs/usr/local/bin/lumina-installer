@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# =============================================================================
+# lumina-installer — Wrapper to launch Calamares with fallback to archinstall
+# =============================================================================
+# Tries to launch the Calamares GUI installer first. If Calamares is missing
+# or fails, falls back to the text-based archinstall with a pre-baked profile.
+# =============================================================================
+
+set -euo pipefail
+
+# ---------- Try Calamares ----------
+if command -v calamares >/dev/null 2>&1; then
+  echo "==> Launching Calamares GUI installer..."
+  if pkexec calamares -d; then
+    echo "==> Calamares finished. You can reboot now."
+    exit 0
+  else
+    RC=$?
+    if [[ $RC -ne 0 ]]; then
+      echo "WARNING: Calamares exited with code $RC. Falling back to archinstall."
+      if command -v yad >/dev/null 2>&1; then
+        yad --title="Installer Issue" \
+          --text="Calamares exited unexpectedly (code $RC).\nFalling back to text-based archinstall.\n\nOpen a terminal to follow the prompts." \
+          --button="Continue:0" --button="Abort:1"
+        [[ $? -ne 0 ]] && exit $RC
+      fi
+    fi
+  fi
+fi
+
+# ---------- Fallback: archinstall ----------
+if ! command -v archinstall >/dev/null 2>&1; then
+  echo "ERROR: Neither calamares nor archinstall is installed. Cannot proceed."
+  exit 1
+fi
+
+echo "==> Launching archinstall with Lumina profile..."
+echo ""
+echo "This will guide you through:"
+echo "  1. Disk selection and partitioning"
+echo "  2. User creation"
+echo "  3. Network configuration"
+echo "  4. Package selection (Lumina desktop)"
+echo ""
+echo "Press Enter to continue, Ctrl+C to abort."
+read -r
+
+# Use the Lumina pre-baked profile if present
+if [[ -f /usr/share/lumina/archinstall-profile/lumina.json ]]; then
+  archinstall --config /usr/share/lumina/archinstall-profile/lumina.json \
+              --creds /usr/share/lumina/archinstall-profile/credentials.json
+else
+  archinstall
+fi

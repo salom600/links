@@ -1,0 +1,16 @@
+# Lumina Linux — Default application helpers (XFCE)
+# Maps URL/mail/file schemes to the right apps so Whisker Menu + Thunar
+# open things in the user's preferred app.
+
+WebBrowser=firefox
+Mailer=thunderbird
+TerminalEmulator=xfce4-terminal
+FileManager=Thunar
+VideoPlayer=vlc
+MediaPlayer=vlc
+ImageViewer=ristretto
+TextEditor=mousepad
+PDFReader=evince
+ArchiveManager=file-roller
+Calculator=gnome-calculator
+Calendar=thunderbird

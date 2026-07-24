@@ -1,0 +1,393 @@
+# =============================================================================
+# Lumina Linux — Live ISO package list (x86_64)
+# =============================================================================
+# This file is consumed by `mkarchiso` to build the live environment.
+# Lines starting with `#` and blank lines are ignored.
+# Order: base -> kernel -> firmware -> networking -> display -> DE -> apps
+# =============================================================================
+
+# ---------- Base system ----------
+base
+base-devel
+linux
+linux-headers
+linux-firmware
+linux-firmware-bnx2x
+linux-firmware-liquidio
+linux-firmware-marvell
+intel-ucode
+amd-ucode
+systemd
+systemd-sysvcompat
+openssh
+sudo
+which
+fsarchiver
+parted
+gptfdisk
+ntfs-3g
+dosfstools
+mtools
+smartmontools
+
+# ---------- Bootloader & install tools ----------
+grub
+efibootmgr
+os-prober
+memtest86+
+arch-install-scripts
+archinstall
+calamares
+
+# ---------- Package manager & app store ----------
+pacman-contrib
+reflector
+flatpak
+xdg-desktop-portal
+xdg-desktop-portal-gtk
+pamac-aur                     # from local AUR repo
+paru-bin                      # from local AUR repo
+
+# ---------- Networking ----------
+networkmanager
+network-manager-applet
+modemmanager
+mobile-broadband-provider-info
+blueman
+bluez
+bluez-utils
+openvpn
+networkmanager-openvpn
+wireguard-tools
+firewalld
+nftables
+avahi
+nss-mdns
+
+# ---------- Xorg & input ----------
+xorg-server
+xorg-xinit
+xorg-xinput
+xorg-xrandr
+xorg-xrdb
+xorg-setxkbmap
+xorg-xbacklight
+xorg-xkill
+xorg-xev
+xorg-xdpyinfo
+xf86-input-libinput
+xf86-input-synaptics
+xf86-video-amdgpu
+xf86-video-ati
+xf86-video-intel
+xf86-video-nouveau
+xf86-video-vesa
+xf86-video-vmware
+mesa
+vulkan-radeon
+vulkan-intel
+vulkan-nouveau
+vulkan-icd-loader
+vulkan-mesa-layers
+lib32-mesa
+lib32-vulkan-radeon
+lib32-vulkan-intel
+lib32-vulkan-icd-loader
+glmark2
+vulkan-tools
+
+# ---------- NVIDIA (proprietary, optional but expected by gamers) ----------
+nvidia
+nvidia-utils
+lib32-nvidia-utils
+nvidia-settings
+nvidia-dkms                  # build against custom kernel if needed
+
+# ---------- Audio (PipeWire stack) ----------
+pipewire
+pipewire-pulse
+pipewire-alsa
+pipewire-jack
+pipewire-audio
+pipewire-v4l2
+pipewire-x11-bell
+wireplumber
+pavucontrol
+pulseaudio-bluetooth
+sof-firmware
+alsa-utils
+alsa-tools
+alsa-plugins
+
+# ---------- Fonts ----------
+ttf-dejavu
+ttf-liberation
+noto-fonts
+noto-fonts-cjk
+noto-fonts-emoji
+noto-fonts-compat
+ttf-ubuntu-font-family
+inter-font
+ttf-jetbrains-mono
+ttf-fira-code
+ttf-bitstream-vera
+gnu-free-fonts
+xcursor-transparent
+
+# ---------- XFCE desktop ----------
+xfce4
+xfce4-goodies
+xfwm4-themes
+xfce4-pulseaudio-plugin
+xfce4-whiskermenu-plugin
+xfce4-notifyd
+xfce4-screensaver
+xfce4-screenshooter
+xfce4-power-manager
+xfce4-session
+xfce4-settings
+xfce4-appfinder
+xfce4-panel-profiles
+xfce4-terminal
+mousepad
+ristretto
+thunar
+thunar-volman
+thunar-archive-plugin
+thunar-media-tags-plugin
+tumbler
+ffmpegthumbnailer
+raw-thumbnailer
+poppler-glib
+libgsf
+file-roller
+gvfs
+gvfs-afc
+gvfs-gphoto2
+gvfs-mtp
+gvfs-nfs
+gvfs-smb
+gvfs-goa
+xdg-user-dirs
+xdg-user-dirs-gtk
+xdg-utils
+desktop-file-utils
+
+# ---------- Compositor (Win11 acrylic blur) ----------
+picom
+xorg-xprop
+
+# ---------- Themes (Win11-style) ----------
+fluent-gtk-theme-git          # AUR — Win11 GTK theme
+tela-icon-theme-git           # AUR — Win11-style icons
+tela-circle-icon-theme-git    # AUR — circular variant
+arc-gtk-theme
+arc-icon-theme
+papirus-icon-theme
+gtk-engine-murrine
+gtk3
+gtk4
+adwaita-icon-theme
+gnome-themes-extra
+xcursor-premium
+kvantum
+kvantum-qt5
+qt5ct
+qt6ct
+
+# ---------- Login screen ----------
+lightdm
+lightdm-gtk-greeter
+lightdm-gtk-greeter-settings
+accountsservice
+
+# ---------- General-user applications ----------
+firefox
+firefox-i18n-en-us
+firefox-ublock-origin
+libreoffice-fresh
+libreoffice-fresh-en-us
+hunspell
+hunspell-en_US
+hunspell-en_GB
+hyphen
+hyphen-en
+mythes
+mythes-en
+vlc
+mpv
+ffmpeg
+ffmpegthumbnailer
+gthumb
+gimp
+inkscape
+evince
+eog
+filezilla
+thunderbird
+thunderbird-i18n-en-us
+transmission-gtk
+qbittorrent
+gnome-calculator
+gnome-screenshot
+gnome-system-monitor
+gnome-disk-utility
+baobab
+filelight
+hardinfo
+neofetch
+fastfetch
+htop
+btop
+nvtop
+timeshift
+gparted
+gsmartcontrol
+usbimager
+yad                            # GTK dialog tool for lumina-welcome
+zenity                         # Fallback dialog tool for lumina-welcome
+libreoffice-extension-texmaths
+
+# ---------- Gaming (preinstalled for general users with gaming interest) ----------
+steam
+gamemode
+lib32-gamemode
+gamescope
+mangohud
+lib32-mangohud
+vulkan-tools
+wine
+wine-gecko
+wine-mono
+winetricks
+giflib
+lib32-giflib
+gnutls
+lib32-gnutls
+vkd3d
+lib32-vkd3d
+
+# ---------- Win-migrant helpers ----------
+# (bottles and protonup-qt are built from AUR by CI and installed via the local lumina repo)
+
+# ---------- Communication & media (Flatpak-friendly) ----------
+discord
+telegram-desktop
+zoom
+obs-studio
+obs-gstreamer
+gstreamer
+gst-plugins-good
+gst-plugins-bad
+gst-plugins-ugly
+gst-libav
+
+# ---------- Codecs ----------
+gst-plugins-base
+gst-plugins-base-libs
+aom
+dav1d
+ffmpeg
+libvorbis
+libvpx
+x264
+x265
+libdvdcss
+libdvdread
+libdvdnav
+
+# ---------- Utilities ----------
+git
+git-lfs
+github-cli
+curl
+wget
+rsync
+unzip
+p7zip
+unrar
+tar
+gzip
+xz
+zstd
+nano
+vim
+neovim
+bat
+exa
+fd
+ripgrep
+jq
+yt-dlp
+tmux
+tree
+htop
+ncdu
+strace
+ltrace
+lsof
+file
+diffutils
+patch
+make
+cmake
+pkgconf
+dkms
+etckeeper
+reflector
+python
+python-pip
+python-setuptools
+python-wheel
+python-virtualenv
+perl
+ruby
+go
+rust
+cargo
+nodejs
+npm
+yarn
+
+# ---------- Power management ----------
+tlp
+tlp-rdw
+acpi
+acpid
+upower
+thermald
+cpupower
+
+# ---------- Filesystem & disk utilities ----------
+btrfs-progs
+btrfs-assistant
+snapper
+snapper-gui
+xfsprogs
+f2fs-tools
+exfatprogs
+ntfs-3g
+udisks2
+udiskie
+polkit-gnome
+gvfs
+
+# ---------- Security & privacy ----------
+ufw
+gufw
+keepassxc
+gnome-keyring
+libsecret
+seahorse
+pinentry
+
+# ---------- Firmware & drivers ----------
+sof-firmware
+alsa-firmware
+linux-firmware-qlogic
+wd719x-firmware
+aic94xx-firmware
+upd72020x-fw
+mkinitcpio
+mkinitcpio-archiso
+booster

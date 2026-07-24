@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# =============================================================================
+# lumina-welcome — First-boot welcome app
+# =============================================================================
+# A lightweight GTK dialog (yad) shown on first login. Gives the new user:
+#   1. One-click "Install Lumina to disk" (launches Calamares)
+#   2. One-click "Update system" (runs pamac update)
+#   3. Quick tour of features (keyboard shortcuts, app store, etc.)
+#   4. Help / docs link
+#
+# Runs automatically on first login if ~/.config/lumina/welcome-seen doesn't exist.
+# Can also be launched from the Whisker Menu.
+# =============================================================================
+
+set -euo pipefail
+
+WELCOME_FLAG="${HOME}/.config/lumina/welcome-seen"
+mkdir -p "$(dirname "$WELCOME_FLAG")"
+
+# Check for first-run
+if [[ "${1:-}" != "--force" ]] && [[ -f "$WELCOME_FLAG" ]]; then
+  exit 0
+fi
+
+# Detect if running in live ISO (the lumina user's home is ephemeral)
+IS_LIVE=0
+if [[ -f /run/archiso/iso_marker ]] || mountpoint -q /run/archiso/bootmnt 2>/dev/null; then
+  IS_LIVE=1
+fi
+
+# ---------- Build the welcome dialog ----------
+ICON_DIR="/usr/share/icons/Tela-blue/scalable/apps"
+
+if ! command -v yad >/dev/null 2>&1; then
+  # yad missing — fall back to a simple zenity info box
+  if command -v zenity >/dev/null 2>&1; then
+    zenity --info --title="Welcome to Lumina Linux" \
+      --text="Welcome to Lumina Linux!\n\nOpen the menu (bottom-left) to start.\nClick 'Install Lumina' on the desktop to install to your disk."
+  fi
+  touch "$WELCOME_FLAG"
+  exit 0
+fi
+
+# ---------- Buttons ----------
+if [[ "$IS_LIVE" -eq 1 ]]; then
+  INSTALL_BTN="--button='Install Lumina to Disk!$ICON_DIR/calamares.svg':3"
+else
+  INSTALL_BTN="--button='Open App Store!$ICON_DIR/pamac.svg':3"
+fi
+
+# ---------- Welcome dialog ----------
+yad \
+  --title="Welcome to Lumina Linux" \
+  --width=640 --height=480 --center \
+  --window-icon="/usr/share/backgrounds/lumina/lumina-logo.png" \
+  --image="/usr/share/backgrounds/lumina/lumina-logo.png" \
+  --image-on-top \
+  --text="<span size='x-large' weight='bold'>Welcome to Lumina Linux</span>
+
+A lightweight, modern, Windows 11-style Linux desktop.
+
+<b>Get started:</b>
+• Click the <b>Lumina logo</b> (bottom-left) for the application menu
+• <b>Super+E</b> opens the file manager (just like Windows)
+• <b>Super+T</b> opens the terminal
+• <b>Super+L</b> locks the screen
+• The <b>app store</b> is on the taskbar — install apps with one click
+
+<b>Need help?</b>
+Documentation: <u>https://github.com/salom600/links#readme</u>" \
+  --text-align=center \
+  --form \
+  --columns=1 \
+  --button='Take a Tour!gtk-info:2' \
+  $INSTALL_BTN \
+  --button='Close!gtk-close:1'
+
+case $? in
+  1) : ;;  # Close
+  2) lumina-tour ;;
+  3)
+    if [[ "$IS_LIVE" -eq 1 ]]; then
+      pkexec /usr/bin/calamares -d || lumina-installer
+    else
+      pamac-manager &
+    fi
+    ;;
+esac
+
+touch "$WELCOME_FLAG"

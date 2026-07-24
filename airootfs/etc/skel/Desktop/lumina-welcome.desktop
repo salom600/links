@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Lumina Welcome
+GenericName=Welcome & Tour
+Comment=Get started with Lumina Linux
+Exec=/usr/local/bin/lumina-welcome --force
+Icon=help-browser
+Terminal=false
+Categories=System;Lumina;
+StartupNotify=true
