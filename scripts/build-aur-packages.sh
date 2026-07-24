@@ -76,6 +76,21 @@ build_one() {
   echo "==> Building: $pkg"
   echo "=========================================="
 
+  # ---------- 4.0. Cache check ----------
+  # If a previously-built .pkg.tar.zst for this package already exists in the
+  # local repo (restored from the GitHub Actions cache), skip the build entirely.
+  # The repo database is regenerated at the end regardless, so cached packages
+  # are picked up automatically by mkarchiso's pacstrap.
+  local cached_pkg
+  cached_pkg=$(ls "$REPO_DIR"/${pkg}-*.pkg.tar.zst 2>/dev/null | head -n1 || true)
+  if [[ -n "$cached_pkg" && -f "$cached_pkg" ]]; then
+    elapsed=$(( $(date +%s) - start_ts ))
+    echo "==> CACHED: $pkg (already in $REPO_DIR, skipping build)"
+    echo "    File: $(basename "$cached_pkg")"
+    SUCCEEDED+=("$pkg (cached, ${elapsed}s)")
+    return 0
+  fi
+
   local BUILD_DIR="/tmp/aur-builds/$pkg"
   rm -rf "$BUILD_DIR"
   mkdir -p "$BUILD_DIR"
@@ -166,6 +181,7 @@ else
   echo "         Arch repos will be used. This means pamac, paru, fluent-gtk-theme,"
   echo "         tela-icon-theme, bottles, and protonup-qt will NOT be in the ISO."
   echo "         The build will still succeed; users can install these manually later."
+  echo "         (Cache was empty / corrupt on this run — next run will rebuild.)"
 fi
 
 # ---------- 6. Summary ----------

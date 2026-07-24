@@ -29,7 +29,5 @@ file_permissions=(
   ['/usr/local/bin/lumina-welcome']='0:0:755'
   ['/usr/local/bin/lumina-toggle-effects']='0:0:755'
   ['/usr/local/bin/lumina-installer']='0:0:755'
-  ['/root/.automated_script.sh']='0:0:755'
-  ['/root/.gnupg']='0:0:700'
   ['/usr/local/share/lumina/scripts/first-boot.sh']='0:0:755'
 )

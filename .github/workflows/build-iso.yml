@@ -10,7 +10,13 @@
 # archiso which are not packaged for Ubuntu). The container runs unprivileged;
 # mkarchiso does not need root inside the container for squashfs creation.
 #
-# Build time budget: ~45–75 minutes (well under the 6-hour job limit).
+# Build time budget:
+#   - Cold cache (first run): ~45–75 min (well under the 6-hour job limit)
+#   - Warm cache (subsequent runs with same package list): ~15–25 min
+#     * pacman deps:        ~3 min   (all cached)
+#     * AUR builds:         ~2 min   (all cached — makepkg skipped)
+#     * ISO pacstrap+mkiso: ~10 min  (pacman pkgs cached, mkarchiso still runs)
+#     * image upload+release: ~2 min
 # Disk usage: ~10 GB peak (well under the 14 GB runner SSD limit).
 # =============================================================================
 
@@ -47,6 +53,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ---------- 1b. Restore pacman package cache ----------
+      # pacman stores every downloaded .pkg.tar.zst in /var/cache/pacman/pkg/.
+      # On a cache hit, `pacman -S` uses the cached file directly (no re-download).
+      # Keyed on the package list hash so the cache refreshes when the list changes;
+      # restore-keys lets us fall back to a stale-but-mostly-correct cache on a miss,
+      # which still saves the bulk of the download bandwidth.
+      - name: Restore pacman package cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-v1-${{ hashFiles('packages.x86_64') }}
+          restore-keys: |
+            pacman-v1-
+
+      # ---------- 1c. Restore AUR built-packages cache ----------
+      # /tmp/lumina-repo holds the .pkg.tar.zst files produced by the previous
+      # successful run. build-aur-packages.sh checks for each package by name
+      # and skips the makepkg step entirely if a cached artifact exists.
+      # Keyed on the build script hash so any logic change invalidates the cache.
+      - name: Restore AUR build cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/lumina-repo
+          key: aur-repo-v1-${{ hashFiles('scripts/build-aur-packages.sh') }}
+          restore-keys: |
+            aur-repo-v1-
+
       # ---------- 2. Refresh Arch keyring + system + base build deps ----------
       - name: Install build dependencies
         run: |
@@ -74,6 +107,7 @@ jobs:
             mtools \
             squashfs-tools \
             libisoburn \
+            pacman-contrib \
             pkgconf \
             patch \
             diffutils \
@@ -179,6 +213,17 @@ jobs:
             out/*.sha256sum
           retention-days: 14
           compression-level: 0   # ISO is already compressed; no point re-compressing
+
+      # ---------- 9b. Trim pacman cache before it gets re-saved ----------
+      # Keep only the latest version of each cached package. This prevents the
+      # cache from growing unboundedly across runs as Arch packages get upgraded.
+      # `pacman-contrib` is installed in step 2; paccache ships with it.
+      - name: Trim pacman cache (keep latest only)
+        if: always()
+        run: |
+          paccache -r -k 1 --cachedir /var/cache/pacman/pkg || true
+          # Also drop any orphan files (e.g. removed-from-list packages)
+          du -sh /var/cache/pacman/pkg || true
 
       # ---------- 11. Publish GitHub Release (only on tag push) ----------
       - name: Publish GitHub Release

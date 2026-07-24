@@ -14,6 +14,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add ZRAM swap for better low-RAM performance
 - Add `linux-zen` kernel variant ISO for gaming-focused users
 
+## [0.1.4] — CI caching + airootfs perms fix
+
+### Fixed
+- **`profiledef.sh`**: Removed `file_permissions` entries for `/root/.automated_script.sh`
+  and `/root/.gnupg` — these files don't exist in our airootfs overlay (they were
+  leftover from the archiso sample profile) and caused mkarchiso to abort with
+  `Failed to set permissions on '/__w/.../airootfs/root/.automated_script.sh'. Outside of valid path.`
+- **`.github/workflows/build-iso.yml`**: Added `pacman-contrib` to the build deps
+  so `paccache` is available for cache trimming at the end of the run.
+
+### Added
+- **GitHub Actions caching** (cuts warm-cache build time from ~50 min to ~15–25 min):
+  - `pacman-v1-${hashFiles('packages.x86_64')}` cache on `/var/cache/pacman/pkg/` —
+    on cache hit, `pacman -S` reads directly from the local cache instead of
+    re-downloading every package.
+  - `aur-repo-v1-${hashFiles('scripts/build-aur-packages.sh')}` cache on
+    `/tmp/lumina-repo/` — preserves built AUR `.pkg.tar.zst` files across runs.
+- **`scripts/build-aur-packages.sh`**: Added cache-skip logic. If a previously
+  built `.pkg.tar.zst` for a package already exists in `/tmp/lumina-repo/`,
+  the package is marked `CACHED` and `makepkg` is skipped entirely.
+- **Cache-trim step**: `paccache -r -k 1` runs at the end of every build to keep
+  only the latest version of each cached package, preventing unbounded growth.
+
 ## [0.1.0] — Initial scaffold
 
 ### Added
