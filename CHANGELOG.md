@@ -14,6 +14,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add ZRAM swap for better low-RAM performance
 - Add `linux-zen` kernel variant ISO for gaming-focused users
 
+## [0.1.6] — Fix package list + make AUR cache actually save
+
+### Fixed
+- **`packages.x86_64`**: Removed packages that no longer exist in Arch official
+  repos and would cause `pacstrap` to abort with "target not found":
+  - `syslinux` — removed from Arch in 2025 (now AUR-only; we also dropped the
+    `bios.syslinux` boot mode in `profiledef.sh` to match — UEFI-only now)
+  - `noto-fonts-compat` — removed from Arch in 2023
+  - `xfwm4-themes` — removed from Arch
+  - `xcursor-transparent` — never existed in official repos
+  - `neofetch` — removed from Arch in 2024 (unmaintained upstream; `fastfetch`
+    is the modern replacement and is already in the list)
+  - `obs-gstreamer` — never existed as a standalone package
+  - `cargo` — virtual package provided by both `rust` and `rustup`. Listing it
+    separately caused `pacstrap` to hang on an interactive "choose provider"
+    prompt. Since `rust` is already in the list (and provides `cargo`),
+    listing `cargo` separately is redundant and was removed.
+- **`profiledef.sh`**: Dropped `bios.syslinux` boot mode (now UEFI-only).
+  `syslinux` is no longer in Arch official repos, and UEFI has been standard
+  on x86_64 hardware since ~2012, so BIOS-only systems are not the target
+  audience for a modern Win11-style distro.
+- **`.github/workflows/build-iso.yml`**: Added `archlinux-keyring` to the
+  initial deps install. The archlinux container's keyring may be stale, which
+  can cause pacman to reject packages signed with newer keys (surfacing as
+  spurious "target not found" errors during `mkarchiso`'s pacstrap step).
+
+### Added
+- **`scripts/build-aur-packages.sh`**: Added 7 new AUR packages that were
+  previously in `packages.x86_64` but are AUR-only:
+  - `xcursor-premium` — cursor theme
+  - `zoom` — video conferencing
+  - `snapper-gui` — GUI front-end for snapper
+  - `neofetch` — system info (removed from Arch in 2024)
+  - `syslinux` — bootloader (removed from Arch in 2025)
+  - `wd719x-firmware`, `aic94xx-firmware`, `upd72020x-fw` — rare firmware
+- **`.github/workflows/build-iso.yml`**: Switched from implicit `actions/cache@v4`
+  (which has both restore and save in a post-step) to EXPLICIT
+  `actions/cache/restore` + `actions/cache/save` steps with `if: always()`.
+  The implicit post-step is unreliable when a job fails partway through
+  inside a container — this is why v0.1.4 saved ZERO caches even though it
+  ran for 75 minutes. The new explicit save steps run regardless of job
+  success, so a 75-minute AUR build phase will never have to be repeated
+  on the next run.
+- **`.github/workflows/build-iso.yml`**: Added debug logging step that prints
+  cache-hit status and directory contents before and after the AUR build,
+  making it easy to diagnose cache issues from the workflow log.
+
 ## [0.1.5] — Privileged container + cleanup file_permissions warnings
 
 ### Fixed

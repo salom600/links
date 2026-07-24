@@ -66,8 +66,16 @@ jobs:
       # Keyed on the package list hash so the cache refreshes when the list changes;
       # restore-keys lets us fall back to a stale-but-mostly-correct cache on a miss,
       # which still saves the bulk of the download bandwidth.
+      #
+      # IMPORTANT: we use actions/cache/restore (NOT actions/cache) so the save
+      # happens via an EXPLICIT actions/cache/save step later in the workflow
+      # with `if: always()`. The default actions/cache post-step is unreliable
+      # when the job fails partway through (it doesn't always run inside a
+      # container after a failed step). This is why v0.1.4 saved ZERO caches
+      # even though it ran for 75 minutes.
       - name: Restore pacman package cache
-        uses: actions/cache@v4
+        id:   pacman-cache-restore
+        uses: actions/cache/restore@v4
         with:
           path: /var/cache/pacman/pkg
           key: pacman-v1-${{ hashFiles('packages.x86_64') }}
@@ -80,12 +88,27 @@ jobs:
       # and skips the makepkg step entirely if a cached artifact exists.
       # Keyed on the build script hash so any logic change invalidates the cache.
       - name: Restore AUR build cache
-        uses: actions/cache@v4
+        id:   aur-cache-restore
+        uses: actions/cache/restore@v4
         with:
           path: /tmp/lumina-repo
           key: aur-repo-v1-${{ hashFiles('scripts/build-aur-packages.sh') }}
           restore-keys: |
             aur-repo-v1-
+
+      # ---------- 1d. Debug: show what was restored ----------
+      # This is critical for diagnosing cache issues — without it we can't tell
+      # whether a slow build is due to a cache miss or a real AUR build.
+      - name: Show cache state after restore
+        run: |
+          echo "=== Pacman cache restore result: ${{ steps.pacman-cache-restore.outputs.cache-hit }} ==="
+          echo "=== AUR repo cache restore result: ${{ steps.aur-cache-restore.outputs.cache-hit }} ==="
+          echo ""
+          echo "=== /var/cache/pacman/pkg contents (if any) ==="
+          ls -lh /var/cache/pacman/pkg/ 2>/dev/null | head -20 || echo "  (empty or doesn't exist)"
+          echo ""
+          echo "=== /tmp/lumina-repo contents (if any) ==="
+          ls -lh /tmp/lumina-repo/ 2>/dev/null || echo "  (empty or doesn't exist)"
 
       # ---------- 2. Refresh Arch keyring + system + base build deps ----------
       - name: Install build dependencies
@@ -98,6 +121,12 @@ jobs:
 
           # Install sudo first (needed by build-aur-packages.sh's builder user)
           pacman -Sy --noconfirm --needed sudo
+
+          # Install/refresh the archlinux-keyring FIRST. The container's
+          # keyring may be stale, which causes pacman to reject packages
+          # signed with newer keys (surfacing as spurious 'target not found'
+          # errors during mkarchiso's pacstrap step).
+          pacman -S --noconfirm --needed archlinux-keyring
 
           # Full system upgrade + the tools mkarchiso and makepkg need.
           # --overwrite is needed because archlinux container sometimes has
@@ -160,6 +189,30 @@ jobs:
         run: |
           chmod +x scripts/build-aur-packages.sh
           bash scripts/build-aur-packages.sh
+
+      # ---------- 5b. Save AUR build cache (always, even on failure) ----------
+      # CRITICAL: this runs with `if: always()` so the cache is saved even if
+      # the build fails later. Without this, a 75-minute AUR build phase would
+      # have to be repeated on every retry. The `continue-on-error: true` is
+      # because actions/cache/save fails if the exact key already exists
+      # (which is fine — it means the cache is already up to date).
+      - name: Save AUR build cache
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/lumina-repo
+          key: aur-repo-v1-${{ hashFiles('scripts/build-aur-packages.sh') }}
+
+      # ---------- 5c. Debug: show AUR build results ----------
+      - name: Show AUR repo contents
+        if: always()
+        run: |
+          echo "=== /tmp/lumina-repo contents after AUR build ==="
+          ls -lh /tmp/lumina-repo/ 2>/dev/null || echo "  (empty or doesn't exist)"
+          echo ""
+          echo "=== Total size ==="
+          du -sh /tmp/lumina-repo/ 2>/dev/null || true
 
       # ---------- 6. Generate placeholder branding assets ----------
       # These are simple PNG/SVG placeholders so the ISO builds even before
@@ -231,6 +284,17 @@ jobs:
           paccache -r -k 1 --cachedir /var/cache/pacman/pkg || true
           # Also drop any orphan files (e.g. removed-from-list packages)
           du -sh /var/cache/pacman/pkg || true
+
+      # ---------- 9c. Save pacman cache (always, even on failure) ----------
+      # Same rationale as the AUR cache save — explicit save with `if: always()`
+      # so the cache is preserved across runs even if the build fails later.
+      - name: Save pacman package cache
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-v1-${{ hashFiles('packages.x86_64') }}
 
       # ---------- 11. Publish GitHub Release (only on tag push) ----------
       - name: Publish GitHub Release

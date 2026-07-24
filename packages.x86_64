@@ -31,12 +31,12 @@ mtools
 smartmontools
 
 # ---------- Bootloader & install tools ----------
+# NOTE: syslinux was removed from Arch official repos in 2025 (now AUR-only).
+# We dropped the bios.syslinux boot mode in profiledef.sh to match — UEFI-only.
 grub
 efibootmgr
 os-prober
-syslinux                  # required by archiso's bios.syslinux boot mode
-mtools                    # required by syslinux for FAT fs manipulation
-memtest86+                # BIOS memory tester
+mtools                    # FAT fs manipulation (still used by grub-install)
 memtest86+-efi            # UEFI memory tester (shows up in systemd-boot menu)
 edk2-shell                # UEFI shell (bootable from systemd-boot menu)
 arch-install-scripts
@@ -124,24 +124,24 @@ alsa-tools
 alsa-plugins
 
 # ---------- Fonts ----------
+# NOTE: noto-fonts-compat was removed from Arch in 2023 — drop it.
+# NOTE: xcursor-transparent doesn't exist in official repos — drop it.
 ttf-dejavu
 ttf-liberation
 noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji
-noto-fonts-compat
 ttf-ubuntu-font-family
 inter-font
 ttf-jetbrains-mono
 ttf-fira-code
 ttf-bitstream-vera
 gnu-free-fonts
-xcursor-transparent
 
 # ---------- XFCE desktop ----------
+# NOTE: xfwm4-themes was removed from Arch — drop it.
 xfce4
 xfce4-goodies
-xfwm4-themes
 xfce4-pulseaudio-plugin
 xfce4-whiskermenu-plugin
 xfce4-notifyd
@@ -193,7 +193,7 @@ gtk3
 gtk4
 adwaita-icon-theme
 gnome-themes-extra
-xcursor-premium
+# NOTE: xcursor-premium is AUR-only — moved to scripts/build-aur-packages.sh
 kvantum
 kvantum-qt5
 qt5ct
@@ -239,7 +239,8 @@ gnome-disk-utility
 baobab
 filelight
 hardinfo
-neofetch
+# NOTE: neofetch was removed from Arch in 2024 (unmaintained upstream).
+# fastfetch is the modern replacement and is already in the list.
 fastfetch
 htop
 btop
@@ -277,9 +278,9 @@ lib32-vkd3d
 # ---------- Communication & media (Flatpak-friendly) ----------
 discord
 telegram-desktop
-zoom
+# NOTE: zoom is AUR-only — moved to scripts/build-aur-packages.sh
 obs-studio
-obs-gstreamer
+# NOTE: obs-gstreamer doesn't exist as a standalone package — drop it.
 gstreamer
 gst-plugins-good
 gst-plugins-bad
@@ -348,7 +349,10 @@ perl
 ruby
 go
 rust
-cargo
+# NOTE: 'cargo' was removed from this list — it's a virtual package
+# provided by both 'rust' and 'rustup'. Since 'rust' is already listed
+# above, cargo is automatically provided. Listing cargo separately caused
+# pacstrap to hang on an interactive 'choose provider' prompt.
 nodejs
 npm
 yarn
@@ -366,7 +370,7 @@ cpupower
 btrfs-progs
 btrfs-assistant
 snapper
-snapper-gui
+# NOTE: snapper-gui is AUR-only — moved to scripts/build-aur-packages.sh
 xfsprogs
 f2fs-tools
 exfatprogs
@@ -389,9 +393,8 @@ pinentry
 sof-firmware
 alsa-firmware
 linux-firmware-qlogic
-wd719x-firmware
-aic94xx-firmware
-upd72020x-fw
+# NOTE: wd719x-firmware, aic94xx-firmware, upd72020x-fw are AUR-only —
+# moved to scripts/build-aur-packages.sh
 mkinitcpio
 mkinitcpio-archiso
 booster

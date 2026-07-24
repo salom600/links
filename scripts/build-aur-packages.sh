@@ -37,6 +37,7 @@ AUR_PACKAGES=(
   "fluent-gtk-theme-git"    # Win11-style GTK3/4 theme
   "tela-icon-theme-git"     # Win11-style icon set (blue variant)
   "tela-circle-icon-theme-git"
+  "xcursor-premium"         # Premium cursor theme (AUR-only)
 
   # ---------- Win-migrant helpers ----------
   "bottles"                 # Wine prefix manager with GUI
@@ -45,6 +46,22 @@ AUR_PACKAGES=(
   # ---------- Useful extras ----------
   "nerd-fonts-inter"        # Modern UI font with glyphs
   "grub-theme-vimix"        # GRUB bootloader theme
+
+  # ---------- Apps that moved out of official Arch repos ----------
+  # These were previously in packages.x86_64 but were either removed from
+  # Arch official repos or were always AUR-only. Moved here so they end up
+  # in the local [lumina] repo and can be installed by pacstrap.
+  "neofetch"                # Removed from Arch in 2024 (unmaintained upstream)
+  "zoom"                    # Video conferencing (always AUR-only)
+  "snapper-gui"             # GUI front-end for snapper (AUR-only)
+
+  # ---------- Bootloader-related (AUR-only since 2025) ----------
+  "syslinux"                # Removed from Arch official repos in 2025
+
+  # ---------- Rare firmware (AUR-only) ----------
+  "wd719x-firmware"         # Western Digital WD719x SCSI firmware
+  "aic94xx-firmware"        # Adaptec AIC94xx SAS controller firmware
+  "upd72020x-fw"            # NEC uPD72020x USB 3.0 firmware
 )
 
 # Track outcomes for the final summary
