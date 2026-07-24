@@ -59,9 +59,14 @@ arch-install-scripts
 archinstall
 
 # ---------- Package manager & app store ----------
+# v0.1.9: Pamac was dropped from the AUR build list (15-min Rust compile was
+# pushing us past the AUR timeout). gnome-software replaces it as the GUI
+# app store — handles Flatpak + pacman packages. Users who specifically want
+# Pamac's AUR-GUI can install it on first boot: `paru -S --noconfirm pamac-aur`.
 pacman-contrib
 reflector
 flatpak
+gnome-software
 xdg-desktop-portal
 xdg-desktop-portal-gtk
 

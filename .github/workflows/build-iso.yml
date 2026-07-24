@@ -98,9 +98,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /tmp/lumina-repo
-          key: aur-repo-v1-${{ hashFiles('scripts/build-aur-packages.sh') }}
+          # v0.1.9: bumped to v2 because v1 caches the partial build from
+          # the timed-out v0.1.8 run (had pamac-aur in the list which no
+          # longer exists in v0.1.9 — restoring it would carry stale state).
+          key: aur-repo-v2-${{ hashFiles('scripts/build-aur-packages.sh') }}
           restore-keys: |
-            aur-repo-v1-
+            aur-repo-v2-
 
       # ---------- 1d. Debug: show what was restored ----------
       # This is critical for diagnosing cache issues — without it we can't tell
@@ -256,7 +259,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/lumina-repo
-          key: aur-repo-v1-${{ hashFiles('scripts/build-aur-packages.sh') }}
+          key: aur-repo-v2-${{ hashFiles('scripts/build-aur-packages.sh') }}
 
       # ---------- 5c. Debug: show AUR build results ----------
       - name: Show AUR repo contents

@@ -10,6 +10,18 @@
 #   [lumina]
 #   Server = file:///tmp/lumina-repo
 #
+# v0.1.9 RATIONALE — why pamac-aur was removed:
+#   pamac-aur is a Rust+Vala source build. On a fresh Actions runner it takes
+#   15-20 minutes to compile (cargo release build of the pamac-ui crate +
+#   meson build of the libpamac Vala library). With the 7 other AUR packages
+#   (~8 min total), that pushed us past the 20-min AUR timeout we added in
+#   v0.1.8. Rather than bump the timeout (which just shifts the failure
+#   mode), we drop pamac-aur entirely. Users who specifically want Pamac's
+#   GUI can install it on first boot via:
+#       paru -S --noconfirm pamac-aur
+#   The default ISO ships `gnome-software` (in [extra], zero compile time)
+#   as the GUI app store — it handles Flatpak + pacman packages.
+#
 # v0.1.8 RATIONALE — why this list shrank from 16 → 8 packages:
 #   The previous v0.1.7 list included `calamares`, `bottles`, `protonup-qt`
 #   which are HUGE source builds (cmake + Qt5 + kpmcore for calamares = 20+ min,
@@ -27,8 +39,9 @@
 #   - zoom, snapper-gui — non-essential, install via Pamac if user wants.
 #   - wd719x-firmware, aic94xx-firmware, upd72020x-fw — rare SCSI/USB
 #     firmware; users with that hardware can install from AUR.
+#   - tela-circle-icon-theme-git — redundant with tela-icon-theme-git.
 #
-#   Total cold-cache AUR build time: ~10-15 min (vs. 60-75 min previously).
+#   Total cold-cache AUR build time: ~8-10 min (6 packages, all fast).
 #
 # Design: ALL packages are treated as non-fatal. If any single package fails
 # to build, the script logs the failure and continues. The ISO will be
@@ -48,14 +61,19 @@ fi
 # ---------- 1. Configuration ----------
 REPO_DIR="/tmp/lumina-repo"
 AUR_PACKAGES=(
-  # ---------- AUR helper & app store ----------
+  # ---------- AUR helper (CLI) ----------
+  # pamac-aur was REMOVED in v0.1.9 — it's a Rust+Vala source build that
+  # takes 15+ minutes alone and pushed us past the 20-min AUR timeout.
+  # Users who want Pamac's GUI can install it on first boot via:
+  #   paru -S --noconfirm pamac-aur
+  # (one-time 15-min build they can do while getting coffee).
+  # For the default ISO, we ship `gnome-software` (in [extra], zero compile)
+  # as the GUI app store — it handles Flatpak + pacman.
   "paru-bin"                # AUR helper, binary release, ~30s build
-  "pamac-aur"               # App store GUI (supports AUR + Flatpak), ~5min build
 
   # ---------- Theming (Win11 look) ----------
   "fluent-gtk-theme-git"    # Win11-style GTK3/4 theme, ~1min build (just copies files)
   "tela-icon-theme-git"     # Win11-style icon set, ~2min build
-  "tela-circle-icon-theme-git"
   "xcursor-premium"         # Premium cursor theme, ~1min build
 
   # ---------- Fonts & bootloader theme ----------
@@ -81,6 +99,19 @@ sudo pacman -S --noconfirm --needed --overwrite '*' \
 BUILD_LOG="/tmp/lumina-aur-build.log"
 echo "==> AUR build log: $BUILD_LOG"
 : > "$BUILD_LOG"
+
+# v0.1.9: cumulative timer for diagnostic visibility. If the build hits the
+# 20-min workflow timeout, we can see from the log exactly which package was
+# in progress and how much time had been spent so far.
+PHASE_START_TS=$(date +%s)
+print_phase_elapsed() {
+  local now elapsed_min elapsed_sec
+  now=$(date +%s)
+  elapsed_sec=$((now - PHASE_START_TS))
+  elapsed_min=$((elapsed_sec / 60))
+  elapsed_sec=$((elapsed_sec % 60))
+  echo "==> [elapsed since AUR phase start: ${elapsed_min}m${elapsed_sec}s]"
+}
 
 build_one() {
   local pkg="$1"
@@ -175,10 +206,13 @@ build_one() {
 }
 
 for pkg in "${AUR_PACKAGES[@]}"; do
+  print_phase_elapsed
   build_one "$pkg" || true  # never abort the loop
   # Clean orphaned deps before next build to keep disk usage low
   sudo pacman -Rns --noconfirm "$(pacman -Qdtq)" 2>/dev/null || true
 done
+print_phase_elapsed
+echo "==> All packages processed. AUR phase complete."
 
 # ---------- 5. Create repo database ----------
 echo ""
