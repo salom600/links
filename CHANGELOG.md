@@ -14,6 +14,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add ZRAM swap for better low-RAM performance
 - Add `linux-zen` kernel variant ISO for gaming-focused users
 
+## [0.1.7] — Fix inline comments + rename/replace removed packages
+
+### Fixed
+- **`packages.x86_64`**: Removed ALL inline comments. The mkarchiso parser
+  strips the `#...` part of an inline comment but PRESERVES the trailing
+  whitespace before it, so `mtools                    # comment` was passed
+  to pacman as `mtools                    ` (with trailing spaces). Pacman
+  then reported `target not found: mtools                    ` even though
+  the package exists. This was the root cause of 11 of the 20 errors in
+  v0.1.6. The file now uses full-line comments only.
+- **`packages.x86_64`**: Replaced renamed/removed NVIDIA packages:
+  - `nvidia` → `nvidia-open` (renamed in 2024; NVIDIA now defaults to
+    open-source kernel modules on Turing+ / RTX 20xx and newer)
+  - `nvidia-dkms` → `nvidia-open-dkms` (same rename)
+- **`packages.x86_64`**: Removed `xf86-video-vmware` (removed from Arch;
+  modern VMware uses `open-vm-tools` + kernel drivers). Replaced with
+  `open-vm-tools`.
+- **`packages.x86_64`**: Removed `libreoffice-fresh-en-us` (doesn't exist;
+  US English is bundled in `libreoffice-fresh` itself).
+
+### Added
+- **`scripts/build-aur-packages.sh`**: Added 8 new AUR packages that were
+  previously in `packages.x86_64` but are AUR-only:
+  - `calamares` — installer (moved to AUR in 2025)
+  - `arc-gtk-theme`, `arc-icon-theme`, `gtk-engine-murrine` — moved to AUR
+  - `yad`, `zenity` — GTK dialog tools (AUR-only)
+  - `usbimager` — USB image writer (AUR-only)
+  - `raw-thumbnailer` — RAW camera thumbnailer (AUR-only)
+
 ## [0.1.6] — Fix package list + make AUR cache actually save
 
 ### Fixed

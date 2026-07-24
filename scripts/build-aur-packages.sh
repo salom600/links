@@ -51,9 +51,19 @@ AUR_PACKAGES=(
   # These were previously in packages.x86_64 but were either removed from
   # Arch official repos or were always AUR-only. Moved here so they end up
   # in the local [lumina] repo and can be installed by pacstrap.
+  "calamares"               # Installer — moved to AUR in 2025
   "neofetch"                # Removed from Arch in 2024 (unmaintained upstream)
   "zoom"                    # Video conferencing (always AUR-only)
   "snapper-gui"             # GUI front-end for snapper (AUR-only)
+  "yad"                     # GTK dialog tool (AUR-only)
+  "zenity"                  # GTK dialog tool (AUR-only, alternate to yad)
+  "usbimager"               # Minimal USB image writer (AUR-only)
+  "raw-thumbnailer"         # RAW camera file thumbnailer (AUR-only)
+
+  # ---------- Theming that moved to AUR ----------
+  "arc-gtk-theme"           # Arc GTK theme (moved to AUR)
+  "arc-icon-theme"          # Arc icon theme (moved to AUR)
+  "gtk-engine-murrine"      # Murrine GTK2 engine (moved to AUR)
 
   # ---------- Bootloader-related (AUR-only since 2025) ----------
   "syslinux"                # Removed from Arch official repos in 2025
