@@ -72,12 +72,19 @@ AUR_PACKAGES=(
   "paru-bin"                # AUR helper, binary release, ~30s build
 
   # ---------- Theming (Win11 look) ----------
-  "fluent-gtk-theme-git"    # Win11-style GTK3/4 theme, ~1min build (just copies files)
-  "tela-icon-theme-git"     # Win11-style icon set, ~2min build
+  # v0.1.10: switched from fluent-gtk-theme-git (6 min SASS compile) to
+  # fluent-gtk-theme (non-git release tarball, ~30s). Same theme, just
+  # pre-built by upstream.
+  # v0.1.10: tela-icon-theme-git REMOVED — it hangs for 11+ min in
+  # package() installing 48 color variants. Replaced by papirus-icon-theme
+  # (in [extra], zero build time) as the default icon set.
+  # v0.1.10: nerd-fonts-inter REMOVED — runs fontforge Nerd Font Patcher
+  # on every OTF (multi-minute). Replaced by ttf-nerd-fonts-symbols
+  # (in [extra], pre-built, zero build time).
+  "fluent-gtk-theme"        # Win11-style GTK3/4 theme, ~30s (release tarball)
   "xcursor-premium"         # Premium cursor theme, ~1min build
 
-  # ---------- Fonts & bootloader theme ----------
-  "nerd-fonts-inter"        # Modern UI font with glyphs, ~3min build
+  # ---------- Bootloader theme ----------
   "grub-theme-vimix"        # GRUB bootloader theme, ~1min build
 )
 

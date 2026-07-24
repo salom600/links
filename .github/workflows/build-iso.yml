@@ -98,12 +98,12 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /tmp/lumina-repo
-          # v0.1.9: bumped to v2 because v1 caches the partial build from
-          # the timed-out v0.1.8 run (had pamac-aur in the list which no
-          # longer exists in v0.1.9 — restoring it would carry stale state).
-          key: aur-repo-v2-${{ hashFiles('scripts/build-aur-packages.sh') }}
+          # v0.1.10: bumped to v3 because v2 caches the v0.1.9 partial build
+          # (had fluent-gtk-theme-git, tela-icon-theme-git, nerd-fonts-inter
+          # which no longer exist in v0.1.10 — restoring it would carry stale state).
+          key: aur-repo-v3-${{ hashFiles('scripts/build-aur-packages.sh') }}
           restore-keys: |
-            aur-repo-v2-
+            aur-repo-v3-
 
       # ---------- 1d. Debug: show what was restored ----------
       # This is critical for diagnosing cache issues — without it we can't tell
@@ -236,13 +236,14 @@ jobs:
       # mkarchiso's pacstrap. Packages that fail to build are skipped with a
       # warning so the ISO can still be produced (with reduced functionality).
       #
-      # v0.1.8: Hard 20-min timeout. The v0.1.7 list (with bottles, calamares,
-      # protonup-qt — 30+ min source builds each) ran for 1h15min before being
-      # manually cancelled. The v0.1.8 list (8 fast-build packages) should
-      # finish in 10-15 min cold, 1-2 min warm. If we exceed 20 min, something
-      # is wrong and we abort instead of burning Actions minutes.
+      # v0.1.10: timeout lowered 20 -> 10 min. With only 4 fast-build packages
+      # (paru-bin ~30s, fluent-gtk-theme ~30s, xcursor-premium ~1min,
+      # grub-theme-vimix ~1min), the AUR phase should finish in 3-5 min cold,
+      # 30s warm. If we exceed 10 min, something is wrong (network, mirror,
+      # upstream PKGBUILD change) and we abort instead of burning Actions
+      # minutes.
       - name: Build AUR packages
-        timeout-minutes: 20
+        timeout-minutes: 10
         run: |
           chmod +x scripts/build-aur-packages.sh
           bash scripts/build-aur-packages.sh
@@ -259,7 +260,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/lumina-repo
-          key: aur-repo-v2-${{ hashFiles('scripts/build-aur-packages.sh') }}
+          key: aur-repo-v3-${{ hashFiles('scripts/build-aur-packages.sh') }}
 
       # ---------- 5c. Debug: show AUR build results ----------
       - name: Show AUR repo contents

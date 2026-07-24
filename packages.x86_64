@@ -137,7 +137,9 @@ alsa-tools
 alsa-plugins
 alsa-firmware
 
-# ---------- Fonts (minimal, just enough for UI + CJK + emoji) ----------
+# ---------- Fonts (minimal, just enough for UI + CJK + emoji + glyphs) ----------
+# v0.1.10: nerd-fonts-inter (AUR, slow fontforge build) replaced by
+# ttf-nerd-fonts-symbols from [extra] — pre-built, provides same glyphs.
 ttf-dejavu
 ttf-liberation
 noto-fonts
@@ -145,6 +147,8 @@ noto-fonts-cjk
 noto-fonts-emoji
 inter-font
 ttf-jetbrains-mono
+ttf-nerd-fonts-symbols
+ttf-nerd-fonts-symbols-mono
 
 # ---------- XFCE desktop (core only, no -goodies bloat) ----------
 # NOTE: the 'xfce4' meta-package was removed from Arch in 2024.
