@@ -83,6 +83,7 @@ networkmanager-openvpn
 wireguard-tools
 firewalld
 nftables
+iptables
 avahi
 nss-mdns
 
@@ -115,12 +116,18 @@ glmark2
 vulkan-tools
 
 # ---------- NVIDIA (open kernel modules, Turing+ default) ----------
-nvidia-open
+# v0.1.11: REMOVED nvidia-open — it conflicts with nvidia-open-dkms (both
+# provide the kernel modules). Keep only nvidia-open-dkms so the modules
+# auto-rebuild on kernel updates via DKMS.
 nvidia-open-dkms
 nvidia-utils
 nvidia-settings
 
 # ---------- Audio (PipeWire stack) ----------
+# v0.1.11: REMOVED pulseaudio-bluetooth — it pulls in `pulseaudio`, which
+# conflicts with `pipewire-pulse` (PipeWire's drop-in replacement for the
+# PulseAudio daemon). PipeWire handles Bluetooth audio natively via the
+# `bluez` module in wireplumber — no separate pulseaudio-bluetooth needed.
 pipewire
 pipewire-pulse
 pipewire-alsa
@@ -130,7 +137,6 @@ pipewire-v4l2
 pipewire-x11-bell
 wireplumber
 pavucontrol
-pulseaudio-bluetooth
 sof-firmware
 alsa-utils
 alsa-tools
